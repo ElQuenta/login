@@ -1,0 +1,4 @@
+:root { font-family: system-ui, 'Segoe UI', sans-serif; color: #17263b; background: #f1f5fa; font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 280px; }
+button, input { font: inherit; }

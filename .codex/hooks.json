@@ -1,0 +1,53 @@
+{
+  "description": "Protecci\u00f3n de tests y revisi\u00f3n backend con un intento de autofix.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import pathlib,runpy; p=next(p for p in [pathlib.Path.cwd(),*pathlib.Path.cwd().parents] if (p/'.codex/hooks/quality.py').is_file()); runpy.run_path(str(p/'.codex/hooks/quality.py'),run_name='__main__')\" hook",
+            "timeout": 20,
+            "statusMessage": "Protecci\u00f3n de tests"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import pathlib,runpy; p=next(p for p in [pathlib.Path.cwd(),*pathlib.Path.cwd().parents] if (p/'.codex/hooks/quality.py').is_file()); runpy.run_path(str(p/'.codex/hooks/quality.py'),run_name='__main__')\" hook",
+            "timeout": 20,
+            "statusMessage": "Protecci\u00f3n de tests"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import pathlib,runpy; p=next(p for p in [pathlib.Path.cwd(),*pathlib.Path.cwd().parents] if (p/'.codex/hooks/quality.py').is_file()); runpy.run_path(str(p/'.codex/hooks/quality.py'),run_name='__main__')\" hook",
+            "timeout": 20,
+            "statusMessage": "Protecci\u00f3n de tests"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import pathlib,runpy; p=next(p for p in [pathlib.Path.cwd(),*pathlib.Path.cwd().parents] if (p/'.codex/hooks/quality.py').is_file()); runpy.run_path(str(p/'.codex/hooks/quality.py'),run_name='__main__')\" hook",
+            "timeout": 1200,
+            "statusMessage": "Revisi\u00f3n y autofix de backend"
+          }
+        ]
+      }
+    ]
+  }
+}

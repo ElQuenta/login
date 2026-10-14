@@ -1,0 +1,140 @@
+name: Backend quality
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-quality-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      QUALITY_ROOT: ${{ github.workspace }}
+      MONGO_URI: mongodb://127.0.0.1:27017/auth_ci
+      JWT_SECRET: ci-only-placeholder-secret-at-least-32-characters
+      JWT_EXPIRES_IN: 1h
+      FRONTEND_ORIGIN: http://localhost:5173
+      CODEX_QUALITY_FIXING: '1'
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'quit(db.adminCommand({ping:1}).ok ? 0 : 1)'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: back/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install backend dependencies
+        run: npm ci --prefix back
+
+      - name: Test quality hooks
+        run: python -m unittest discover -s .codex/hooks/tests -v
+
+      - name: Preserve independent reviewer and baseline
+        run: |
+          cp .codex/hooks/quality.py "$RUNNER_TEMP/quality.py"
+          cp .codex/hooks/fix-prompt.md "$RUNNER_TEMP/fix-prompt.md"
+          python "$RUNNER_TEMP/quality.py" snapshot --baseline "$RUNNER_TEMP/baseline.json"
+
+      - name: Review build, Jest and integration
+        id: review
+        continue-on-error: true
+        run: python "$RUNNER_TEMP/quality.py" review --integration
+
+      - name: Check autofix availability
+        id: autofix
+        if: >-
+          steps.review.outcome == 'failure' &&
+          github.actor != 'dependabot[bot]' &&
+          (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        env:
+          HAS_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
+        run: echo "enabled=$HAS_KEY" >> "$GITHUB_OUTPUT"
+
+      - name: Preserve original failure report
+        if: steps.review.outcome == 'failure'
+        run: cp .codex/.state/review.json "$RUNNER_TEMP/original-review.json"
+
+      - name: One repair attempt through Codex
+        id: repair
+        if: steps.autofix.outputs.enabled == 'true'
+        timeout-minutes: 10
+        continue-on-error: true
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          codex-version: '0.162.1'
+          prompt-file: ${{ runner.temp }}/fix-prompt.md
+          output-file: ${{ runner.temp }}/fix-result.md
+          sandbox: workspace-write
+          codex-args: '["-c", "features.hooks=false"]'
+
+      - name: Verify protected files and rerun original review
+        id: recheck
+        if: steps.repair.outcome == 'success'
+        continue-on-error: true
+        run: |
+          python "$RUNNER_TEMP/quality.py" verify --baseline "$RUNNER_TEMP/baseline.json"
+          npm ci --prefix back
+          python "$RUNNER_TEMP/quality.py" review --integration
+          python "$RUNNER_TEMP/quality.py" verify --baseline "$RUNNER_TEMP/baseline.json"
+
+      - name: Export verified source patch
+        if: steps.recheck.outcome == 'success'
+        run: |
+          git add -N -- back/src
+          git diff --binary HEAD -- back/src > "$RUNNER_TEMP/autofix.patch"
+
+      - name: Upload review reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-quality-${{ github.run_id }}-${{ github.run_attempt }}
+          include-hidden-files: true
+          path: |
+            .codex/.state/review.json
+            ${{ runner.temp }}/original-review.json
+            ${{ runner.temp }}/fix-result.md
+            ${{ runner.temp }}/autofix.patch
+          if-no-files-found: ignore
+
+      - name: Report status of the original commit
+        if: always()
+        env:
+          REVIEW: ${{ steps.review.outcome }}
+          RECHECK: ${{ steps.recheck.outcome }}
+        run: |
+          if [ "$REVIEW" != "success" ]; then
+            echo 'El commit original no supera la revisión.' >> "$GITHUB_STEP_SUMMARY"
+            if [ "$RECHECK" = "success" ]; then
+              echo 'Autofix verificado: descarga autofix.patch, revísalo y aplícalo. El check pasará al subir la corrección.' >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo 'No hay una reparación validada. Consulta los informes; autofix requiere OPENAI_API_KEY y un evento permitido.' >> "$GITHUB_STEP_SUMMARY"
+            fi
+            exit 1
+          fi
+          echo 'Build, Jest e integración correctos en el commit original.' >> "$GITHUB_STEP_SUMMARY"

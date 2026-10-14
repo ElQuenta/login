@@ -1,0 +1,24 @@
+.login-page { min-height: 100svh; display: grid; place-items: center; padding: 28px 16px; }
+.login-card { width: 100%; max-width: 440px; padding: 36px; background: #fff; border: 1px solid #dce4ee; border-radius: 20px; box-shadow: 0 16px 50px #18324b0d; }
+.login-mark { display: grid; place-items: center; width: 44px; height: 44px; background: #e9f1ff; color: #225dc1; font-size: 28px; border-radius: 12px; margin-bottom: 28px; }
+.login-eyebrow { color: #52647a; font-size: 12px; letter-spacing: 2px; font-weight: 700; margin: 0 0 8px; }
+.login-card h1 { font-size: 30px; letter-spacing: -1px; margin: 0 0 10px; }
+.login-description { color: #52647a; line-height: 1.5; margin: 0 0 30px; }
+.login-field { margin-bottom: 20px; }
+.login-field label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.login-field input { width: 100%; min-height: 48px; border: 1px solid #a9b8ca; border-radius: 8px; padding: 12px; color: #17263b; background: #fff; }
+.login-field input::placeholder { color: #67778a; }
+.login-field input[aria-invalid='true'] { border-color: #b42318; }
+.password-field { display: flex; align-items: center; gap: 8px; }
+.password-field input { min-width: 0; }
+.password-toggle { flex-shrink: 0; min-height: 48px; padding: 10px; background: #f1f5fa; color: #2255a6; border: 1px solid #dce4ee; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; }
+.login-submit { width: 100%; min-height: 48px; border: 0; border-radius: 8px; background: #225dc1; color: #fff; font-weight: 600; cursor: pointer; margin-top: 4px; }
+.login-submit:hover:enabled { background: #194b9e; }
+input:focus-visible, button:focus-visible { outline: 3px solid #4886e2; outline-offset: 3px; }
+button:disabled { opacity: .65; cursor: wait; }
+.field-error { color: #a61c13; font-size: 13px; margin: 8px 0 0; }
+.login-error { padding: 12px; background: #fff1ee; border: 1px solid #f0c4bc; border-radius: 8px; color: #9a2318; font-size: 14px; line-height: 1.5; }
+.login-status { min-height: 20px; margin: 12px 0 0; color: #52647a; font-size: 13px; text-align: center; }
+.login-success { background: #edf8f2; border: 1px solid #b5ddc9; padding: 20px; border-radius: 10px; color: #175c3d; overflow-wrap: anywhere; }
+.login-success p { margin: 10px 0 0; }
+@media (max-width: 480px) { .login-card { padding: 28px 20px; } }
