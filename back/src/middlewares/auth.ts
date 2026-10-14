@@ -12,7 +12,7 @@ export const requireAuth: RequestHandler = (req, res, next) => {
     if (typeof payload === 'string' || typeof payload.sub !== 'string' || !isValidObjectId(payload.sub)) {
       throw new Error('Token inválido');
     }
-    res.locals.userId = payload.sub;
+    res.locals.userID = payload.sub;
     next();
   } catch {
     res.status(401).json({ message: 'Token inválido o expirado.' });
